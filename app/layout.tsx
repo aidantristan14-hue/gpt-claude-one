@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "One — GPT and Claude in one chat",
-  description: "A chat app powered by GPT and Claude.",
+  title: "Zamd — AI chat",
+  description: "Chat with Zamd, powered by Groq.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,11 +1,16 @@
-# GPT + Claude chat starter
+# Zamd
 
-A Next.js app with one chat interface and a model picker for Auto, Groq, or Claude. Auto routes writing and long prompts to Claude, and other prompts to Groq.
+Zamd is a simple Next.js chat app using one model through Groq's API. It sends requests directly to Groq from a server-side route; the API key is never sent to the browser. The `openai/gpt-oss-120b` value is the selected Groq model ID, not an OpenAI API endpoint.
 
 ## Run locally
 
-Requires Node.js 20.9 or later. Copy `.env.example` to `.env.local`, add the API key(s) you have, then run `npm install` and `npm run dev`. Open http://localhost:3000.
+Requires Node.js 20.9 or later. Copy `.env.example` to `.env.local` and set `GROQ_API_KEY` to a key created in the Groq Console. Then run:
 
-Set `GROQ_API_KEY` for Groq and/or `ANTHROPIC_API_KEY` for Claude. The default Groq model can be overridden with `GROQ_MODEL`; check Groq's current supported-models documentation if a model is unavailable. Never commit `.env.local` or share your API keys. Provider usage limits and pricing apply.
+```bash
+npm install
+npm run dev
+```
 
-This starter has no user sign-in, persistent chat history, or public-deployment rate limiting; do not expose an unauthenticated deployment without adding those protections.
+Open http://localhost:3000. Restart the dev server after changing `.env.local`. You can override the model with `GROQ_MODEL` if needed. Groq account limits and pricing apply; free availability can change.
+
+Keep `.env.local` private and never commit or share the API key. This starter has no user sign-in, persistent chat history, or public-deployment rate limiting; add those protections before exposing it publicly.
