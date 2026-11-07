@@ -5,13 +5,14 @@ import OpenAI from "openai";
 export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
-type ModelChoice = "auto" | "gpt" | "claude";
+type ModelChoice = "auto" | "groq" | "claude";
+type Provider = "groq" | "claude";
 
-function chooseProvider(messages: ChatMessage[]): "gpt" | "claude" {
+function chooseProvider(messages: ChatMessage[]): Provider {
   const latest = messages.filter((m) => m.role === "user").at(-1)?.content ?? "";
   return /\b(write|rewrite|draft|story|essay|summari[sz]e|proofread)\b/i.test(latest) || latest.length > 4000
     ? "claude"
-    : "gpt";
+    : "groq";
 }
 
 export async function POST(request: Request) {
@@ -25,8 +26,8 @@ export async function POST(request: Request) {
     if (!Array.isArray(messages) || messages.length < 1 || messages.length > 40) {
       return NextResponse.json({ error: "Send between 1 and 40 messages." }, { status: 400 });
     }
-    if (model !== "auto" && model !== "gpt" && model !== "claude") {
-      return NextResponse.json({ error: "Choose Auto, GPT, or Claude." }, { status: 400 });
+    if (model !== "auto" && model !== "groq" && model !== "claude") {
+      return NextResponse.json({ error: "Choose Auto, Groq, or Claude." }, { status: 400 });
     }
     const valid = messages.every((m) => m && typeof m === "object" &&
       ((m as ChatMessage).role === "user" || (m as ChatMessage).role === "assistant") &&
@@ -34,16 +35,19 @@ export async function POST(request: Request) {
     if (!valid) return NextResponse.json({ error: "Invalid message format or message too long." }, { status: 400 });
 
     const chatMessages = messages as ChatMessage[];
-    const provider: "gpt" | "claude" = model === "auto" ? chooseProvider(chatMessages) : model;
+    const provider: Provider = model === "auto" ? chooseProvider(chatMessages) : model;
     let reply: string;
-    if (provider === "gpt") {
-      if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Add OPENAI_API_KEY to .env.local." }, { status: 503 });
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const result = await client.responses.create({
-        model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-        input: chatMessages.map(({ role, content }) => ({ role, content })),
+    if (provider === "groq") {
+      if (!process.env.GROQ_API_KEY) return NextResponse.json({ error: "Add GROQ_API_KEY to .env.local." }, { status: 503 });
+      const client = new OpenAI({
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: "https://api.groq.com/openai/v1",
       });
-      reply = result.output_text;
+      const result = await client.chat.completions.create({
+        model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+        messages: chatMessages,
+      });
+      reply = result.choices[0]?.message?.content ?? "";
     } else {
       if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "Add ANTHROPIC_API_KEY to .env.local." }, { status: 503 });
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -57,6 +61,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply, provider });
   } catch (error) {
     console.error("Chat request failed:", error);
-    return NextResponse.json({ error: "Chat request failed. Check your API keys and try again." }, { status: 500 });
+    return NextResponse.json({ error: "Chat request failed. Check your API key, model name, and provider account." }, { status: 500 });
   }
 }
